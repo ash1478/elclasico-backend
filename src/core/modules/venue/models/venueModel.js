@@ -32,6 +32,18 @@ let venueSchema = new Schema(
             type: String,
             required: false,
         },
+        startTime: {
+            type: String,
+            required: false,
+        },
+        endTime: {
+            type: String,
+            required: false,
+        },
+        avgCost: {
+            type: String,
+            required: false
+        },
         sessions: [{
             startTime: {
                 type: String,
@@ -47,6 +59,10 @@ let venueSchema = new Schema(
             },
             duration: {
                 type: Number,
+                required: true
+            },
+            cost: {
+                type: String,
                 required: true
             }
         }]

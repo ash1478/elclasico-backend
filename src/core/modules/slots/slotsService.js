@@ -3,7 +3,7 @@ const failureResponseMapper = require("../../common/utils/failureResponseMapper"
 const Venue = require("../venue/models/venueModel");
 const redis = require('../../../repository/cache/redisClient');
 const successResponseMapper = require("../../common/utils/successResponseMapper");
-const { getSlotTimings } = require("./getSlotTimings");
+const { getSlotTimings, getSlotTimingsWithCost } = require("./getSlotTimings");
 const VenueStats = require("../bookings/models/venueStats");
 const moment = require('moment');
 
@@ -30,7 +30,7 @@ module.exports.getSlots = async (req, res) => {
             
             let slotsPerDay = [];
             sessionsPerDay.forEach(session => { 
-                slotsPerDay.push(...getSlotTimings(session.startTime, session.endTime));
+                slotsPerDay.push(...getSlotTimingsWithCost(session));
             });
             totalAvailableSlots.push({
                 weekDayCode: i,
@@ -43,7 +43,6 @@ module.exports.getSlots = async (req, res) => {
                 bookingDate: moment(new Date()).add((i - 1), 'days').format('LL')
             });
 
-            console.log({ bookedDataPerDay });
             let bookedSlotsPerDay = [];
 
             if (bookedDataPerDay) { 
@@ -57,12 +56,11 @@ module.exports.getSlots = async (req, res) => {
             })
         }
 
-        console.log({ bookedData });
 
         for (let i = 0; i < totalAvailableSlots.length; i++) { 
             totalAvailableSlots[i].slots = totalAvailableSlots[i].slots.filter(slot => {
                 if (bookedData[i].slots.length) {
-                    if (!bookedData[i].slots.includes(slot)) {
+                    if (!bookedData[i].slots.includes(slot.time)) {
                         return slot;
                     }   
                 }

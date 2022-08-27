@@ -44,6 +44,11 @@ let bookingSchema = new Schema(
             required: true,
             index: true,
         },
+        status: {
+            type: String,
+            required: true,
+            default: 'BOOKED'
+        },
         slots: [{
             startTime: {
                 type: String,

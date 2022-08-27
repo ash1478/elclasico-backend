@@ -9,4 +9,6 @@ bookingsController.get("/userBookings", bookingsService.getUserBookings);
 
 bookingsController.get("/:bookingId", bookingsService.getBookingById);
 
+bookingsController.post("/cancel", bookingsService.cancelBooking)
+
 module.exports = bookingsController;

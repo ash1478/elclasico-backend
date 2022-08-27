@@ -9,16 +9,16 @@ const redis = require('../../../repository/cache/redisClient')
 module.exports.createBooking = async function (req, res) {
 
     try {
-        let slotkeyToCheck = [];
+        let slotKeyToCheck = [];
         req.body.slots.forEach(element => {
-            slotkeyToCheck.push(`${req.body.venue}.${element.weekDayCode}.${element.startTime}`)
+            slotKeyToCheck.push(`${req.body.venue}.${element.weekDayCode}.${element.startTime}`)
         });
-        slotkeyToCheck.forEach(async element => {
+        slotKeyToCheck.forEach(async element => {
             if (await redis.get(element)) {
-                return res.status(404).send(failureResponseMapper("The slot is alredy being booked by someone else"))
+                return res.status(404).send(failureResponseMapper("The slot is already being booked by someone else"))
             }
         })
-        slotkeyToCheck.forEach(async e => await redis.set(e, 'booking',{EX: 300}))
+        slotKeyToCheck.forEach(async e => await redis.set(e, 'booking',{EX: 300}))
         req.body.venue = mongoose.Types.ObjectId(req.body.venue);
         req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user )
 
@@ -58,7 +58,7 @@ module.exports.createBooking = async function (req, res) {
         }
         const clearVenueSlotsKey = `${req.body.venue}.Slots`;
         await redis.del(clearVenueSlotsKey);
-        slotkeyToCheck.forEach(e => redis.del(e))
+        slotKeyToCheck.forEach(e => redis.del(e))
         return res.status(200).send(successResponseMapper(booking))
         
     }
@@ -103,5 +103,26 @@ module.exports.getUserBookings = async function (req, res) {
     catch (err) { 
         console.log(err);
         return res.status(404).send(failureResponseMapper("No booking found with this id"));
+    }
+}
+
+
+module.exports.cancelBooking = async function (req, res) { 
+    try {
+        const booking = await Booking.findByIdAndUpdate(req.body.bookingId, { status: 'CANCELLED' });
+        const venueStat = await VenueStats.findOne({
+            bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
+            venue: booking.venue,
+        });
+        venueStat.slots.filter(slot => slot.booking !== booking._id);
+        venueStat.save();
+        const clearVenueSlotsKey = `${venueStat.venue}.Slots`;
+        await redis.del(clearVenueSlotsKey);
+
+        return res.status(200).send(successResponseMapper("Booking has been cancelled successfully"));
+    }
+    catch (err) { 
+        console.log(err);
+        return res.status(404).send(failureResponseMapper(err.message));
     }
 }
