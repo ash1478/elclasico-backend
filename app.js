@@ -14,7 +14,7 @@ app.use(express.json())
 
 app.use("/", baseRouter);
 
-app.listen(3010, () => {
+app.listen(process.env.PORT || 3010, () => {
     initializeMongo();
     console.log("App is running on port 3010");
 })
