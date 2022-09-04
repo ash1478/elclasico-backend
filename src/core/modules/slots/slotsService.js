@@ -6,6 +6,7 @@ const successResponseMapper = require("../../common/utils/successResponseMapper"
 const { getSlotTimings, getSlotTimingsWithCost } = require("./getSlotTimings");
 const VenueStats = require("../bookings/models/venueStats");
 const moment = require('moment');
+const { getIstDate } = require("../../common/utils/getIstDate");
 
 
 module.exports.getSlots = async (req, res) => { 
@@ -40,7 +41,7 @@ module.exports.getSlots = async (req, res) => {
             const bookedDataPerDay = await VenueStats.findOne({
                 venue: mongoose.Types.ObjectId(venueId),
                 weekDayCode: i.toString(),
-                bookingDate: moment(new Date()).add((i - 1), 'days').format('LL')
+                bookingDate: moment(getIstDate()).add((i - 1), 'days').format('LL')
             });
 
             let bookedSlotsPerDay = [];
