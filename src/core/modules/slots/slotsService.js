@@ -19,14 +19,17 @@ module.exports.getSlots = async (req, res) => {
         const venueSlotsKey = `${venueId}.Slots`;
         if (await redis.exists(venueSlotsKey)) {
             if (weekDayCode === '*') return res.status(200).send(successResponseMapper(JSON.parse(await redis.get(venueSlotsKey))));
-            return res.status(200).send(successResponseMapper(JSON.parse((await redis.get(venueSlotsKey)))[Number(weekDayCode - 1)]));
+            return res.status(200).send(successResponseMapper(JSON.parse((await redis.get(venueSlotsKey))).filter(slots => slots.weekDayCode === Number(weekDayCode))));
         }
         let totalAvailableSlots = [];
         let bookedData = [];
         const sessions = venue.sessions;
         for (let i = 1; i < 8; i++) { 
+            const today = getIstDate();
+            const currentDate = today.add(i-1,"days");
+            const code = currentDate.day() + 1  > 7 ? currentDate.day() + 1 - 7 : currentDate.day() + 1;
             const sessionsPerDay = sessions.filter(session => {
-                if (session.weekDayCode === i.toString()) return session;
+                if (session.weekDayCode === code.toString()) return session;
             });
             
             let slotsPerDay = [];
@@ -34,15 +37,16 @@ module.exports.getSlots = async (req, res) => {
                 slotsPerDay.push(...getSlotTimingsWithCost(session));
             });
             totalAvailableSlots.push({
-                weekDayCode: i,
+                weekDayCode: code,
                 slots: slotsPerDay
             })
 
             const bookedDataPerDay = await VenueStats.findOne({
                 venue: mongoose.Types.ObjectId(venueId),
-                weekDayCode: i.toString(),
-                bookingDate: moment(getIstDate()).add((i - 1), 'days').format('LL')
+                weekDayCode: code,
+                bookingDate: currentDate.format('LL')
             });
+
 
             let bookedSlotsPerDay = [];
 
@@ -52,7 +56,7 @@ module.exports.getSlots = async (req, res) => {
             })
             }
              bookedData.push({
-                weekDayCode: i,
+                weekDayCode: code,
                 slots: bookedSlotsPerDay
             })
         }
@@ -71,7 +75,7 @@ module.exports.getSlots = async (req, res) => {
         
         await redis.set(venueSlotsKey,JSON.stringify(totalAvailableSlots))
             if (weekDayCode === '*') return res.status(200).send(successResponseMapper(totalAvailableSlots));
-            return res.status(200).send(successResponseMapper(totalAvailableSlots[Number(weekDayCode - 1)]));     }
+            return res.status(200).send(successResponseMapper(totalAvailableSlots.filter(slots => slots.weekDayCode === Number(weekDayCode))))     }
     catch (err) { 
         console.log(err);
         return res.status(404).send(failureResponseMapper(err.message))
@@ -85,3 +89,25 @@ module.exports.clearSlots = async (req, res) => {
     await redis.del(venueSlotsKey);
     res.status(200).send(successResponseMapper("Slots cleared for the venue!"));
 };
+
+
+
+//today weekdaycode = 5,
+//Weekday code 1, i = 1 => (7 - (5 - i) - 2) => 1
+//Weekday code 2, i = 2 => (7 - (5 - i) - 2) => 2
+//Weekday code 3, i = 3 => (7 - (5 - i) - 2) => 3
+//Weekday code 4, i = 4 => (7 - (5 - i) - 2) => 4
+//Weekday code 5, i = 5 => (7 - (5 - i) - 2) => 5
+//Weekday code 6, i = 6 => (7 - (5 - i) - 2) => 6
+//Weekday code 7, i = 7 => (7 - (5 - i) - 2) => 7
+
+//today weekdaycode = 6,
+//Weekday code 1, i = 1 => (6 - (6 - i)) => 1
+//Weekday code 2, i = 2 => (6 - (6 - i)) => 2
+//Weekday code 3, i = 3 => (6 - (6 - i)) => 3
+//Weekday code 4, i = 4 => (6 - (6 - i)) => 4
+//Weekday code 5, i = 5 => (6 - (6 - i)) => 5
+//Weekday code 6, i = 6 => (6 - (6 - i)) => 6
+//Weekday code 7, i = 7 => (6 - (6 - i)) => 7
+
+

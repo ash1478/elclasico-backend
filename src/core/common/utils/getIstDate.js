@@ -1,3 +1,5 @@
+const moment = require('moment');
+
 module.exports.getIstDate = function () { 
-    return new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    return moment(new Date());
 }
