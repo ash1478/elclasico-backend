@@ -7,7 +7,18 @@ const dotenv = require("dotenv").config();
 
 app.use(
   cors({
-    origin: [process.env.PORTAL_URL],
+    origin: true,
+    optionsSuccessStatus: 200,
+    credentials: true,
+  })
+);
+
+app.options(
+  process.env.PORTAL_URL,
+  cors({
+    origin: true,
+    optionsSuccessStatus: 200,
+    credentials: true,
   })
 );
 
