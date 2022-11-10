@@ -11,6 +11,9 @@ module.exports.getAllVenues = async function (req, res) {
     {
       name: 1,
       imageUrls: 1,
+      avgCost: 1,
+      startTime: 1,
+      endTime: 1,
     }
   );
   console.log(`No. of venues fetched: ${venues.length}`);
@@ -51,6 +54,7 @@ module.exports.getVenueBookingsByDate = async function (req, res) {
       {
         venue: venueId,
         bookingDate: moment(new Date(date)).format("LL"),
+        status: 'BOOKED'
       },
       { __v: 0 }
     )

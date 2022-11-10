@@ -88,7 +88,8 @@ module.exports.getBookingById = async function (req, res) {
 module.exports.getUserBookings = async function (req, res) { 
     try {
         const bookings = await Booking.find({
-            user: req.user?._id || req.query.id
+            user: req.user?._id || req.query.id,
+            status: 'BOOKED'
         },{__v: 0}).populate('venue', {
             sessions: 0,
             __v: 0,
