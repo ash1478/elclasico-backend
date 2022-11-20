@@ -121,7 +121,11 @@ module.exports.cancelBooking = async function (req, res) {
 
         console.log({venueStat,  bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
             venue:  mongoose.Types.ObjectId(booking.venue),})
-        venueStat.slots.filter(slot => slot.booking.toString() != req.body.bookingId.toString());
+            console.log(venueStat.slots[0].booking,req.body.bookingId)
+            console.log(venueStat.slots[0].booking.toString(),req.body.bookingId.toString())
+            console.log(venueStat.slots[0].booking.toString() == req.body.bookingId.toString())
+            console.log(venueStat.slots[0].booking.toString() === req.body.bookingId.toString())
+        venueStat.slots.filter(slot => slot.booking + "" != req.body.bookingId.toString());
         console.log(venueStat.slots);
         venueStat.save();
         const clearVenueSlotsKey = `${venueStat.venue}.Slots`;
