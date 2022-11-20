@@ -47,6 +47,7 @@ module.exports.getSlots = async (req, res) => {
                 bookingDate: currentDate.format('LL')
             });
 
+            console.log({  weekDayCode: code, bookingDate: currentDate.format('LL'),bookedDataPerDay})
 
             let bookedSlotsPerDay = [];
 
@@ -66,6 +67,7 @@ module.exports.getSlots = async (req, res) => {
             totalAvailableSlots[i].slots = totalAvailableSlots[i].slots.filter(slot => {
                 if (bookedData[i].slots.length) {
                     if (!bookedData[i].slots.includes(slot.time)) {
+                    console.log(i,slot.time)
                         return slot;
                     }   
                 }

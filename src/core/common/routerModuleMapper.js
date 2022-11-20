@@ -11,7 +11,7 @@ const app = express();
 const baseRouter = express.Router();
 
 baseRouter.get("/", (req, res) => { 
-    res.send(moment(new Date("2022-11-21T13:19:50.251+00:00")).format("LL"));
+    res.send(moment(new Date()));
 })
 baseRouter.use("/auth", authController);
 
