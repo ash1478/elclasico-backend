@@ -27,6 +27,7 @@ module.exports.createBooking = async function (req, res) {
             bookingDate: moment(new Date(req.body.bookingDate)).format('LL'),
             venue: req.body.venue,
         });
+        
         if (venueStats && venueStats != {}) {
             req.body.slots.forEach(e => {
                 venueStats.slots.push({
@@ -109,12 +110,17 @@ module.exports.getUserBookings = async function (req, res) {
 
 
 module.exports.cancelBooking = async function (req, res) { 
+    console.log({body: req.body})
     try {
         const booking = await Booking.findByIdAndUpdate(req.body.bookingId, { status: 'CANCELLED' });
+
         const venueStat = await VenueStats.findOne({
             bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
-            venue: booking.venue,
+            venue:  mongoose.Types.ObjectId(booking.venue),
         });
+
+        console.log({venueStat,  bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
+            venue:  mongoose.Types.ObjectId(booking.venue),})
         venueStat.slots.filter(slot => slot.booking !== booking._id);
         venueStat.save();
         const clearVenueSlotsKey = `${venueStat.venue}.Slots`;

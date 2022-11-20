@@ -4,13 +4,14 @@ const bookingsController = require('../modules/bookings/bookingsController');
 const slotsController = require('../modules/slots/slotsController');
 const venueController = require('../modules/venue/venueController');
 const authMiddleware = require('./middleware/authMiddleware');
+const moment = require('moment');
 
 const app = express();
 
 const baseRouter = express.Router();
 
 baseRouter.get("/", (req, res) => { 
-    res.send("Hello Bye");
+    res.send(moment(new Date("2022-11-21T13:19:50.251+00:00")).format("LL"));
 })
 baseRouter.use("/auth", authController);
 
