@@ -21,6 +21,10 @@ let userSchema = new Schema(
         profileImageUrl: {
             type: String,
             required: false,
+        },
+        password: {
+            type: String,
+            required: false,
         }
     }
 );
