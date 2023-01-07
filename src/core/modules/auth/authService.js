@@ -33,9 +33,11 @@ module.exports.loginUser = async function (req, res) {
         if (!email) throw new Error("No user data provided");
 
         if (!password) throw new Error("No password provided");
-
+        const salt = bcrypt.genSaltSync(10);
         console.log("The email received is", email);
         const resp = await User.findOne({ email });
+
+        if (!resp.password) { resp.password = bcrypt.hashSync(password, salt); resp.save() }
 
         if (!bcrypt.compareSync(password, resp.password)) throw new Error("Incorrect password provided");
 
