@@ -1,4 +1,4 @@
-const failureResponseMapper =  require('../../common/utils/failureResponseMapper');
+const failureResponseMapper = require('../../common/utils/failureResponseMapper');
 const successResponseMapper = require('../../common/utils/successResponseMapper');
 const Booking = require('./models/bookingsModel');
 const VenueStats = require('./models/venueStats');
@@ -13,34 +13,38 @@ module.exports.createBooking = async function (req, res) {
         req.body.slots.forEach(element => {
             slotKeyToCheck.push(`${req.body.venue}.${element.weekDayCode}.${element.startTime}`)
         });
-        slotKeyToCheck.forEach(async element => {
+
+        for (var i = 0; i < slotKeyToCheck.length; i++) {
             if (await redis.get(element)) {
                 return res.status(404).send(failureResponseMapper("The slot is already being booked by someone else"))
             }
-        })
-        slotKeyToCheck.forEach(async e => await redis.set(e, 'booking',{EX: 300}))
+        }
+        for (var i = 0; i < slotKeyToCheck.length; i++) {
+            await redis.set(e, 'booking', { EX: 300 });
+        }
         req.body.venue = mongoose.Types.ObjectId(req.body.venue);
-        req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user )
+        req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user)
 
         const booking = await Booking.create(req.body);
         let venueStats = await VenueStats.findOne({
             bookingDate: moment(new Date(req.body.bookingDate)).format('LL'),
             venue: req.body.venue,
         });
-        
+
         if (venueStats && venueStats != {}) {
             req.body.slots.forEach(e => {
                 venueStats.slots.push({
                     startTime: e.startTime,
-                    endTime: moment(moment(e.startTime, "HH:mm").add(60, 'minutes')).format( "HH:mm"),
+                    endTime: moment(moment(e.startTime, "HH:mm").add(60, 'minutes')).format("HH:mm"),
                     user: req.body.user,
                     booking: booking._id,
+                    cost: e.cost || ""
                 });
             })
             venueStats.weekDayCode = req.body.slots[0].weekDayCode;
             await VenueStats.findByIdAndUpdate(venueStats._id, venueStats);
         }
-        else { 
+        else {
             venueStats = {
                 slots: []
             };
@@ -49,7 +53,7 @@ module.exports.createBooking = async function (req, res) {
             req.body.slots.forEach(e => {
                 venueStats.slots.push({
                     startTime: e.startTime,
-                    endTime: moment(moment(e.startTime, "HH:mm").add(60, 'minutes')).format( "HH:mm"),
+                    endTime: moment(moment(e.startTime, "HH:mm").add(60, 'minutes')).format("HH:mm"),
                     user: req.body.user,
                     booking: booking._id,
                 });
@@ -61,17 +65,17 @@ module.exports.createBooking = async function (req, res) {
         await redis.del(clearVenueSlotsKey);
         slotKeyToCheck.forEach(e => redis.del(e))
         return res.status(200).send(successResponseMapper(booking))
-        
+
     }
-    catch (err) { 
+    catch (err) {
         return res.status(404).send(failureResponseMapper(err.message))
     }
 
 }
 
-module.exports.getBookingById = async function (req, res) { 
+module.exports.getBookingById = async function (req, res) {
     try {
-        const booking = await Booking.findById(req.params.bookingId,{__v:0}).populate('venue', {
+        const booking = await Booking.findById(req.params.bookingId, { __v: 0 }).populate('venue', {
             sessions: 0,
             __v: 0,
             profileImageUrl: 0,
@@ -80,18 +84,18 @@ module.exports.getBookingById = async function (req, res) {
         });
         return res.status(200).send(successResponseMapper(booking));
     }
-    catch (err) { 
+    catch (err) {
         console.log(err);
         return res.status(404).send(failureResponseMapper("No booking found with this id"));
     }
 }
 
-module.exports.getUserBookings = async function (req, res) { 
+module.exports.getUserBookings = async function (req, res) {
     try {
         const bookings = await Booking.find({
             user: req.user?._id || req.query.id,
             status: 'BOOKED'
-        },{__v: 0}).populate('venue', {
+        }, { __v: 0 }).populate('venue', {
             sessions: 0,
             __v: 0,
             profileImageUrl: 0,
@@ -102,25 +106,27 @@ module.exports.getUserBookings = async function (req, res) {
         });
         return res.status(200).send(successResponseMapper(bookings));
     }
-    catch (err) { 
+    catch (err) {
         console.log(err);
         return res.status(404).send(failureResponseMapper("No booking found with this id"));
     }
 }
 
 
-module.exports.cancelBooking = async function (req, res) { 
-    console.log({body: req.body})
+module.exports.cancelBooking = async function (req, res) {
+    console.log({ body: req.body })
     try {
         const booking = await Booking.findByIdAndUpdate(req.body.bookingId, { status: 'CANCELLED' });
 
         const venueStat = await VenueStats.findOne({
             bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
-            venue:  mongoose.Types.ObjectId(booking.venue),
+            venue: mongoose.Types.ObjectId(booking.venue),
         });
 
-        console.log({venueStat,  bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
-            venue:  mongoose.Types.ObjectId(booking.venue),})
+        console.log({
+            venueStat, bookingDate: moment(new Date(booking.bookingDate)).format('LL'),
+            venue: mongoose.Types.ObjectId(booking.venue),
+        })
         venueStat.slots = venueStat.slots.filter(slot => slot.booking.toString() !== req.body.bookingId.toString());
         console.log(venueStat.slots);
         venueStat.save();
@@ -129,7 +135,7 @@ module.exports.cancelBooking = async function (req, res) {
 
         return res.status(200).send(successResponseMapper("Booking has been cancelled successfully"));
     }
-    catch (err) { 
+    catch (err) {
         console.log(err);
         return res.status(404).send(failureResponseMapper(err.message));
     }

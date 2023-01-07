@@ -38,6 +38,10 @@ let venueStatsSchema = new Schema(
                 type: String,
                 required: true
             },
+            cost: {
+                type: String,
+                required: false,
+            }
         }]
     }
 );
