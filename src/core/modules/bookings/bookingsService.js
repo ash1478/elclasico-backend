@@ -15,12 +15,12 @@ module.exports.createBooking = async function (req, res) {
         });
 
         for (var i = 0; i < slotKeyToCheck.length; i++) {
-            if (await redis.get(element)) {
+            if (await redis.get(slotKeyToCheck[i])) {
                 return res.status(404).send(failureResponseMapper("The slot is already being booked by someone else"))
             }
         }
         for (var i = 0; i < slotKeyToCheck.length; i++) {
-            await redis.set(e, 'booking', { EX: 300 });
+            await redis.set(slotKeyToCheck[i], 'booking', { EX: 300 });
         }
         req.body.venue = mongoose.Types.ObjectId(req.body.venue);
         req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user)
