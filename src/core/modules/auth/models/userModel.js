@@ -26,6 +26,9 @@ let userSchema = new Schema(
             type: String,
             required: false,
         }
+    },
+    {
+        timestamps: true
     }
 );
 

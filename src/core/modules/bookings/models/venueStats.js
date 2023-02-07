@@ -43,6 +43,9 @@ let venueStatsSchema = new Schema(
                 required: false,
             }
         }]
+    },
+    {
+        timestamps: true
     }
 );
 

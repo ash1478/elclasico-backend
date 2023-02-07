@@ -66,6 +66,9 @@ let venueSchema = new Schema(
                 required: true
             }
         }]
+    },
+    {
+        timestamps: true
     }
 );
 

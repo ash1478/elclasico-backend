@@ -1,7 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const failureResponseMapper = require("../../common/utils/failureResponseMapper");
 const Venue = require("../venue/models/venueModel");
-const redis = require('../../../repository/cache/redisClient');
+const cacheClient = require('../../../repository/cache/cacheClient');
 const successResponseMapper = require("../../common/utils/successResponseMapper");
 const { getSlotTimings, getSlotTimingsWithCost } = require("./getSlotTimings");
 const VenueStats = require("../bookings/models/venueStats");
@@ -17,9 +17,9 @@ module.exports.getSlots = async (req, res) => {
         const venue = await Venue.findById(mongoose.Types.ObjectId(venueId));
         if (!venue || venue === {}) return res.status(404).send(failureResponseMapper("Venue with given Id not found"));
         const venueSlotsKey = `${venueId}.Slots`;
-        if (await redis.exists(venueSlotsKey)) {
-            if (weekDayCode === '*') return res.status(200).send(successResponseMapper(JSON.parse(await redis.get(venueSlotsKey))));
-            return res.status(200).send(successResponseMapper(JSON.parse((await redis.get(venueSlotsKey))).filter(slots => slots.weekDayCode === Number(weekDayCode))));
+        if (cacheClient.has(venueSlotsKey)) {
+            if (weekDayCode === '*') return res.status(200).send(successResponseMapper(JSON.parse(cacheClient.get(venueSlotsKey))));
+            return res.status(200).send(successResponseMapper(JSON.parse((cacheClient.get(venueSlotsKey))).filter(slots => slots.weekDayCode === Number(weekDayCode))));
         }
         let totalAvailableSlots = [];
         let bookedData = [];
@@ -47,8 +47,6 @@ module.exports.getSlots = async (req, res) => {
                 bookingDate: currentDate.format('LL')
             });
 
-            console.log({  weekDayCode: code, bookingDate: currentDate.format('LL'),bookedDataPerDay})
-
             let bookedSlotsPerDay = [];
 
             if (bookedDataPerDay) { 
@@ -67,7 +65,6 @@ module.exports.getSlots = async (req, res) => {
             totalAvailableSlots[i].slots = totalAvailableSlots[i].slots.filter(slot => {
                 if (bookedData[i].slots.length) {
                     if (!bookedData[i].slots.includes(slot.time)) {
-                    console.log(i,slot.time)
                         return slot;
                     }   
                 }
@@ -75,7 +72,7 @@ module.exports.getSlots = async (req, res) => {
             })
         }
         
-        await redis.set(venueSlotsKey,JSON.stringify(totalAvailableSlots))
+        cacheClient.set(venueSlotsKey,JSON.stringify(totalAvailableSlots))
             if (weekDayCode === '*') return res.status(200).send(successResponseMapper(totalAvailableSlots));
             return res.status(200).send(successResponseMapper(totalAvailableSlots.filter(slots => slots.weekDayCode === Number(weekDayCode))))     }
     catch (err) { 
@@ -88,28 +85,7 @@ module.exports.getSlots = async (req, res) => {
 module.exports.clearSlots = async (req, res) => { 
     let { venueId } = req.query;
     const venueSlotsKey = `${venueId}.Slots`;
-    await redis.del(venueSlotsKey);
+    cacheClient.del(venueSlotsKey);
     res.status(200).send(successResponseMapper("Slots cleared for the venue!"));
 };
-
-
-
-//today weekdaycode = 5,
-//Weekday code 1, i = 1 => (7 - (5 - i) - 2) => 1
-//Weekday code 2, i = 2 => (7 - (5 - i) - 2) => 2
-//Weekday code 3, i = 3 => (7 - (5 - i) - 2) => 3
-//Weekday code 4, i = 4 => (7 - (5 - i) - 2) => 4
-//Weekday code 5, i = 5 => (7 - (5 - i) - 2) => 5
-//Weekday code 6, i = 6 => (7 - (5 - i) - 2) => 6
-//Weekday code 7, i = 7 => (7 - (5 - i) - 2) => 7
-
-//today weekdaycode = 6,
-//Weekday code 1, i = 1 => (6 - (6 - i)) => 1
-//Weekday code 2, i = 2 => (6 - (6 - i)) => 2
-//Weekday code 3, i = 3 => (6 - (6 - i)) => 3
-//Weekday code 4, i = 4 => (6 - (6 - i)) => 4
-//Weekday code 5, i = 5 => (6 - (6 - i)) => 5
-//Weekday code 6, i = 6 => (6 - (6 - i)) => 6
-//Weekday code 7, i = 7 => (6 - (6 - i)) => 7
-
 

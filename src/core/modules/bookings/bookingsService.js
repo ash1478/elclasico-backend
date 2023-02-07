@@ -4,7 +4,7 @@ const Booking = require('./models/bookingsModel');
 const VenueStats = require('./models/venueStats');
 const mongoose = require('mongoose');
 const moment = require('moment');
-const redis = require('../../../repository/cache/redisClient')
+const cacheClient = require('../../../repository/cache/cacheClient')
 
 module.exports.createBooking = async function (req, res) {
 
@@ -13,23 +13,30 @@ module.exports.createBooking = async function (req, res) {
         req.body.slots.forEach(element => {
             slotKeyToCheck.push(`${req.body.venue}.${element.weekDayCode}.${element.startTime}`)
         });
-
-        for (var i = 0; i < slotKeyToCheck.length; i++) {
-            if (await redis.get(slotKeyToCheck[i])) {
-                return res.status(404).send(failureResponseMapper("The slot is already being booked by someone else"))
-            }
-        }
-        for (var i = 0; i < slotKeyToCheck.length; i++) {
-            await redis.set(slotKeyToCheck[i], 'booking', { EX: 300 });
-        }
-        req.body.venue = mongoose.Types.ObjectId(req.body.venue);
-        req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user)
-
-        const booking = await Booking.create(req.body);
         let venueStats = await VenueStats.findOne({
             bookingDate: moment(new Date(req.body.bookingDate)).format('LL'),
             venue: req.body.venue,
         });
+        for (var i = 0; i < slotKeyToCheck.length; i++) {
+            if (cacheClient.get(slotKeyToCheck[i])) {
+                return res.status(404).send(failureResponseMapper("The slot is already being booked by someone else"))
+            }
+            if (venueStats && venueStats != {} && venueStats.slots.length) {
+                for (j = 0; j < venueStats.slots.length; j++) {
+                    if (venueStats.slots[j].startTime === req.body.slots[i].startTime)
+                        return res.status(404).send(failureResponseMapper("The slot is already being booked by someone else"))
+                }
+            }
+
+        }
+        for (var i = 0; i < slotKeyToCheck.length; i++) {
+            cacheClient.set(slotKeyToCheck[i], 'booking', 180);
+        }
+        req.body.venue = mongoose.Types.ObjectId(req.body.venue);
+        req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user)
+        // return res.status(200).send(successResponseMapper("Reached booking stages"));
+        const booking = await Booking.create(req.body);
+
 
         if (venueStats && venueStats != {}) {
             req.body.slots.forEach(e => {
@@ -62,8 +69,8 @@ module.exports.createBooking = async function (req, res) {
             await VenueStats.create(venueStats);
         }
         const clearVenueSlotsKey = `${req.body.venue}.Slots`;
-        await redis.del(clearVenueSlotsKey);
-        slotKeyToCheck.forEach(e => redis.del(e))
+        cacheClient.del(clearVenueSlotsKey);
+        slotKeyToCheck.forEach(e => cacheClient.del(e))
         return res.status(200).send(successResponseMapper(booking))
 
     }
@@ -131,7 +138,7 @@ module.exports.cancelBooking = async function (req, res) {
         console.log(venueStat.slots);
         venueStat.save();
         const clearVenueSlotsKey = `${venueStat.venue}.Slots`;
-        await redis.del(clearVenueSlotsKey);
+        await cacheClient.del(clearVenueSlotsKey);
 
         return res.status(200).send(successResponseMapper("Booking has been cancelled successfully"));
     }
