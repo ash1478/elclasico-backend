@@ -34,9 +34,16 @@ module.exports.createBooking = async function (req, res) {
         }
         req.body.venue = mongoose.Types.ObjectId(req.body.venue);
         req.body.user = mongoose.Types.ObjectId(req.user?._id || req.body.user)
-        // return res.status(200).send(successResponseMapper("Reached booking stages"));
-        const booking = await Booking.create(req.body);
 
+        if(venueStats && venueStats != {}){
+        const bookedSlots = [...venueStats.slots.map(s => s.startTime)];
+        for (var i = 0; i < req.body.slots.length; i++) {
+           if(bookedSlots.includes(req.body.slots[i])) return res.status(404).send(failureResponseMapper("The slot is already booked by someone else"))
+        }
+        }        
+
+        const booking = await Booking.create(req.body);
+      
 
         if (venueStats && venueStats != {}) {
             req.body.slots.forEach(e => {
