@@ -38,7 +38,7 @@ module.exports.createBooking = async function (req, res) {
         if(venueStats && venueStats != {}){
         const bookedSlots = [...venueStats.slots.map(s => s.startTime)];
         for (var i = 0; i < req.body.slots.length; i++) {
-           if(bookedSlots.includes(req.body.slots[i])) return res.status(404).send(failureResponseMapper("The slot is already booked by someone else"))
+           if(bookedSlots.includes(req.body.slots[i].startTime)) return res.status(404).send(failureResponseMapper("The slot is already booked by someone else"))
         }
         }        
 
