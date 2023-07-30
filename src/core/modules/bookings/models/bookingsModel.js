@@ -63,6 +63,9 @@ let bookingSchema = new Schema(
                 required: true
             }
         }]
+    },
+    {
+        timestamps: true
     }
 );
 
