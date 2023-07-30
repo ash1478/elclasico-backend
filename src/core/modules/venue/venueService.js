@@ -4,16 +4,16 @@ const failureResponseMapper = require("../../common/utils/failureResponseMapper"
 const VenueStats = require("../bookings/models/venueStats");
 const moment = require("moment");
 
-
 module.exports.getAllVenues = async function (req, res) {
   const venues = await Venue.find(
-    {},
+    { isActive: true },
     {
       name: 1,
       imageUrls: 1,
       avgCost: 1,
       startTime: 1,
       endTime: 1,
+      isActive: 1,
     }
   );
   console.log(`No. of venues fetched: ${venues.length}`);
@@ -25,10 +25,16 @@ module.exports.getAllVenues = async function (req, res) {
 
 module.exports.getSingleVenue = async function (req, res) {
   try {
-    const venue = await Venue.findById(req.params.venueId);
+    const venue = await Venue.findOne({
+      _id: req.params.venueId,
+      isActive: true,
+    });
     if (venue) {
       return res.status(200).send(successResponseMapper(venue));
     }
+    return res
+      .status(404)
+      .send(failureResponseMapper("No venues available with this Id or is active"));
   } catch (err) {
     return res
       .status(404)
@@ -54,7 +60,7 @@ module.exports.getVenueBookingsByDate = async function (req, res) {
       {
         venue: venueId,
         bookingDate: moment(new Date(date)).format("LL"),
-        status: 'BOOKED'
+        status: "BOOKED",
       },
       { __v: 0 }
     )
