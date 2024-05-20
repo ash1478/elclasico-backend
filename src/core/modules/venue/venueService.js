@@ -6,7 +6,7 @@ const moment = require("moment");
 
 module.exports.getAllVenues = async function (req, res) {
   const venues = await Venue.find(
-    {},
+    { isActive: true },
     {
       name: 1,
       imageUrls: 1,
@@ -14,6 +14,7 @@ module.exports.getAllVenues = async function (req, res) {
       startTime: 1,
       endTime: 1,
       mapLink: 1,
+      isActive: 1,
     }
   );
   console.log(`No. of venues fetched: ${venues.length}`);
@@ -25,10 +26,18 @@ module.exports.getAllVenues = async function (req, res) {
 
 module.exports.getSingleVenue = async function (req, res) {
   try {
-    const venue = await Venue.findById(req.params.venueId);
+    const venue = await Venue.findOne({
+      _id: req.params.venueId,
+      isActive: true,
+    });
     if (venue) {
       return res.status(200).send(successResponseMapper(venue));
     }
+    return res
+      .status(404)
+      .send(
+        failureResponseMapper("No venues available with this Id or is active")
+      );
   } catch (err) {
     return res
       .status(404)
